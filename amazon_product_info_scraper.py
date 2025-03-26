@@ -11,9 +11,11 @@ import os
 import requests
 
 # Proxy credentials
-USERNAME = "u07482d15574405cb-zone-custom-region-eu"
-PASSWORD = "u07482d15574405cb"
-PROXY_DNS = "170.106.118.114:2334"
+USERNAME = "YOUR USERNAME"
+PASSWORD = "YOUR PASSWORD"
+PROXY_DNS = "YOUR PROXY DNS"
+EMAIL = "YOUR EMAIL"
+PASSWORD = "YOUR PASSWORD"
 
 class AmazonProductInfoScraper:
     def __init__(self) -> None:
@@ -136,7 +138,7 @@ class AmazonProductInfoScraper:
                 EC.element_to_be_clickable((By.XPATH, '//*[@id="ap_email"]'))
             )
             self.email.click()
-            self.email.send_keys("workingandtesting@outlook.com")
+            self.email.send_keys(EMAIL)
 
             self.continue_button = WebDriverWait(self.driver, 5).until(
                 EC.element_to_be_clickable((By.XPATH, '//*[@id="continue"]'))
@@ -147,7 +149,7 @@ class AmazonProductInfoScraper:
                 EC.element_to_be_clickable((By.XPATH, '//*[@id="ap_password"]'))
             )
             self.password.click()
-            self.password.send_keys("In71948N")
+            self.password.send_keys(PASSWORD)
 
             self.sign_in_button = WebDriverWait(self.driver, 5).until(
                 EC.element_to_be_clickable((By.XPATH, '//*[@id="signInSubmit"]'))
