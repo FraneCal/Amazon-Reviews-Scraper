@@ -5,15 +5,30 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
+from capmonstercloudclient import CapMonsterClient, ClientOptions
+from capmonstercloudclient.requests import RecaptchaV2ProxylessRequest
+import asyncio
 import time
 import csv
 import os
 import requests
 
+# Captcha credentials
+TWPCAPTCHA_API_KEY = "YOUR 2CAPTCHA API KEY"
+CAPMONSTER_API_KEY = "YOUR CAPMONSTER API KEY"
+client_options = ClientOptions(api_key=CAPMONSTER_API_KEY)
+cap_monster_client = CapMonsterClient(options=client_options)
+
+# Site captcha details
+# SITE_KEY = ""
+# PAGE_URL = ""
+
 # Proxy credentials
-USERNAME = "YOUR USERNAME"
-PASSWORD = "YOUR PASSWORD"
-PROXY_DNS = "YOUR PROXY DNS"
+PROXY_USERNAME = ""
+PROXY_PASSWORD = ""
+PROXY_DNS = ""
+
+# Log in credentials
 EMAIL = "YOUR EMAIL"
 PASSWORD = "YOUR PASSWORD"
 
@@ -26,26 +41,6 @@ class AmazonProductInfoScraper:
         self.review_id = 1
         self.logged_in = False
 
-    def get_proxy(self):
-        """
-        Fetches a new proxy dynamically using provided credentials.
-        Returns a dictionary containing HTTP and HTTPS proxy settings.
-        """
-        proxy_url = f"http://{USERNAME}:{PASSWORD}@{PROXY_DNS}"
-        return {"http": proxy_url, "https": proxy_url}
-
-    def check_ip(self):
-        """
-        Checks and prints the current IP address to verify if the proxy is working.
-        """
-        proxy = self.get_proxy()
-        try:
-            response = requests.get("http://ip-api.com/json", proxies=proxy, timeout=10)
-            ip_data = response.json()
-            print(f"Current Proxy IP: {ip_data.get('query', 'Unknown')} ({ip_data.get('country', 'Unknown')})")
-        except requests.exceptions.RequestException:
-            print("Failed to fetch IP address. Proxy might be blocked!")
-
     def setup_driver(self):
         '''
         Sets up the Selenium WebDriver (Chrome) with necessary options.
@@ -55,12 +50,10 @@ class AmazonProductInfoScraper:
         self.options.add_argument("--no-sandbox")
         self.options.add_argument("--disable-dev-shm-usage")
         self.options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
-        self.options.add_argument(f"--proxy-pac-url=data:text/javascript,{{'FindProxyForURL': function(url, host) {{ return 'PROXY {PROXY_DNS}'; }}}}")
 
         self.driver = webdriver.Chrome(options=self.options)
         return self.driver
 
-    # Number of stars is not working for the second link...check out why
     def basic_product_info_scraper(self, URL, timeout=10):
         '''
         Navigates to the provided Amazon product URL, scrapes basic information like title, price,
@@ -120,7 +113,8 @@ class AmazonProductInfoScraper:
             self.number_of_reviews = "0"
 
         try:
-            self.number_of_stars = self.soup.find('span', id='acrPopover').find('span', class_='a-size-base a-color-base').getText()
+            # self.number_of_stars = self.soup.find('span', id='acrPopover').find('span', class_='a-size-small a-color-base').getText()
+            self.number_of_stars = self.soup.find('span', id='acrPopover').find('span').find('span').getText()
         except AttributeError:
             print("Number of stars not found")
             self.number_of_stars = "0"
@@ -212,7 +206,7 @@ class AmazonProductInfoScraper:
         Scrapes individual reviews from the current review page and appends them to the provided list.
         '''
         try:
-            self.boxes = self.soup.find_all('div', class_='a-section review aok-relative')
+            self.boxes = self.soup.find_all('div', class_='a-section celwidget')
             print(f"Found {len(self.boxes)} reviews on the page.")
         except AttributeError:
             print("Box element name not found")
@@ -289,8 +283,6 @@ class AmazonProductInfoScraper:
                 'Comment': self.comment,
             }
 
-            print(f"Review data: {review}")  # This will show the whole review dictionary
-            print(f"Username: {review['Username']}")  # This will print the username
             reviews.append(review)  # Append the review to the reviews list
             self.review_id += 1
 
@@ -340,12 +332,6 @@ if __name__ == "__main__":
     and scrapes each URL for product and review data.
     '''
     scraper = AmazonProductInfoScraper()
-
-    scraper.check_ip()
-
-    # file_name_input = input("Write the name of the file: ")
-    file_name_input = "nokia"
-    file_name_input = file_name_input.replace(" ", "-").title()
 
     # Read the URLs from the text file
     links = scraper.read_links('amazon_links.txt')
